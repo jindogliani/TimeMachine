@@ -1,0 +1,67 @@
+{
+    "ON0001": {
+        "id": "ON0001",
+        "label": "table",
+        "in_edge": [],
+        "out_edge": [
+            "E0001",
+            "E0005"
+        ]
+    },
+    "ON0002": {
+        "id": "ON0002",
+        "label": "vase",
+        "in_edge": [
+            "E0002"
+        ],
+        "out_edge": []
+    },
+    "ON0003": {
+        "id": "ON0003",
+        "label": "teapot",
+        "in_edge": [
+            "E0003"
+        ],
+        "out_edge": []
+    },
+    "ON0004": {
+        "id": "ON0004",
+        "label": "dinner plates",
+        "in_edge": [
+            "E0004"
+        ],
+        "out_edge": []
+    },
+    "ON0005": {
+        "id": "ON0005",
+        "label": "chair1",
+        "in_edge": [
+            "E0006"
+        ],
+        "out_edge": []
+    },
+    "ON0006": {
+        "id": "ON0006",
+        "label": "chair2",
+        "in_edge": [
+            "E0007"
+        ],
+        "out_edge": []
+    },
+    "ON0007": {
+        "id": "ON0007",
+        "label": "chair3",
+        "in_edge": [
+            "E0008"
+        ],
+        "out_edge": []
+    },
+    "ON0008": {
+        "id": "ON0008",
+        "label": "chair4",
+        "in_edge": [
+            "E0009"
+        ],
+        "out_edge": []
+    }
+}

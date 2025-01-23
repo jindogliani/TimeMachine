@@ -1,0 +1,29 @@
+{
+    "RN0001": {
+        "id": "RN0001",
+        "label": "top of",
+        "type": "spatial",
+        "in_edge": [
+            "E0001"
+        ],
+        "out_edge": [
+            "E0002",
+            "E0003",
+            "E0004"
+        ]
+    },
+    "RN0002": {
+        "id": "RN0002",
+        "label": "surrounded",
+        "type": "semantic",
+        "in_edge": [
+            "E0005"
+        ],
+        "out_edge": [
+            "E0006",
+            "E0007",
+            "E0008",
+            "E0009"
+        ]
+    }
+}
