@@ -1,0 +1,210 @@
+Prompt:
+
+Using the following instructions, create a Scene Graph from the input sentences. The Scene Graph must adhere to the structure and rules provided. Reflect at each step to ensure accuracy, and present the final output strictly in the specified format. Any revisions or updates to the Scene Graph must also follow this format.
+
+---
+
+Fixed Final Output Format:
+
+- Objects: A list of all identified objects.
+- Semantic Relation: A list of all semantic relationships
+- Prepositional Labels: A list of all prepositional labels (e.g., 'with', 'of', 'at' ).
+- Spatial Relation: A list of all spatial relationships
+- Actions: A list of all identified actions (verbs).
+- Scene Graph:
+- If a relation exists: <Anchor Object> → <Relation> → [<Object1>, <Object2>, <Object3>, ...] 
+- If using Actions without a preposition: <Anchor Object> → (action) → <Action Node> → (direct obj) → <Object> 
+- If using Actions with a preposition: <Anchor Object> → (action) → <Action Node> → (preposition) → <Object>
+
+---
+
+Steps to Generate the Scene Graph:
+
+
+Step 1: Analyze the Input
+
+- Break the input text into objects, actions, spatial relationships and semantic relationships.
+- Classify relationships as:
+- Actions Time: If the input begins with a time range (e.g., "0:13-0:38:"), extract this information and associate it with all actions in the sentence. Format: (time_range: Start-End).
+- Actions: Derived from verbs (predicates) in the text.
+- Prepositional labels: Includes associative relations such as with, of , at
+- Spatial relations: Includes hierarchy, spatial relations such as top, left, right, under, in front of (if "in front of", using as only "front"), behind. 
+- Semantic relations: Includes relations such as near, surrounded.
+- Identify a central object (Anchor Object) if multiple objects relate to it.
+- Identify subject and direct object if there is a subject, predicate, and direct object in a sentence.
+
+
+Step 2: Construct the Graph
+
+- Create nodes:
+- Object nodes represent the identified objects.
+- Relation nodes represent semantic relationships.
+- Action nodes represent the identified verbs (actions).
+- Assign directions for edges based on the following rules:
+Rule 0: Edges connect objects, actions, and semantic relations identified in the input.
+Classify edges into spatial relations and associative prepositions.
+
+Rule 1: If an Anchor Object exists (central object connecting multiple others), direct edges outward from it.
+
+Rule 2: If an object is repeated across sentences, designate it as the Anchor Object for consistency.
+
+Rule 3: Use a triple-structure format for actions, prioritizing spatial relations if present; otherwise, use direct objects:
+<Anchor Object> → (action) → <Action Node> → (spatial relation or direct obj) → <Object> (time_range: Start-End).
+Example: The Lecturer → (action) → kneel → (on) → left knee.
+
+Rule 4: For associative prepositions that describe tools or context (e.g., "with," "at," "of"), represent them as:
+<Action Node> → (preposition) → <Object> (time_range: Start-End).
+Example: The Lecturer → (action) → tap → (with) → left hand.
+<Anchor Object> → (action) → <Action Node> → (spatial relation) → <Object> (time_range: Start-End).
+Example: The Lecturer → (action) → tap → (on) → CPR dummy.
+
+Rule 5: When two or multiple direct objects, prepositional labels, and spatial relations exist, branch each into its own edge.
+<Anchor Object> → (action) → <Action Node> → (spatial relation or preposition or direct obj) → <Object> (time_range: Start-End).
+
+Rule 6 : When not a triple-structure format with graphs, use its <Anchor Object> and using verb instead of present participle.
+<Example>  
+Before : The Lecturer → (action) → shift → (between) → looking (time_range: Start-End). , looking  → (at) → dummy's nose (time_range: Start-End).
+After: The Lecturer → (action) → shift → (between) → looking (time_range: Start-End)., The Lecturer -> (action) -> look → (at) → dummy's nose (time_range: Start-End).
+
+
+Step 3: Reflect and Validate
+
+- Verify that:
+- All objects and relationships are accurately identified and classified.
+- The graph adheres to the fixed format.
+- Make corrections if necessary.
+
+
+Step 4: Output the Scene Graph
+
+- Present the final Scene Graph strictly in the fixed format.
+
+---
+Examples:
+
+Example 1:
+
+Input: "01:54- 02:05: On the table, there is a vase, a teapot, and dinner plates. There are four chairs around a round dining table."
+
+Step 1: Analyze the Input
+
+- Objects: [table, vase, teapot, dinner plates, chairs].
+- Actions Time : 01:54- 02:05.
+- Actions : 
+- Spatial Relations: table → (top) → [vase, teapot, dinner plates].
+- Semantic: table → (surrounded) → [chair1, chair2, chair3, chair4].
+- Anchor Node: table.
+
+Step 2: Construct the Graph
+
+- Object Nodes: table, vase, teapot, dinner plates, chairs.
+- Actions Time : 01:54- 02:05.
+- Spatial Relations: top - Semantic Nodes: surrounded
+- Edges:
+- table → (top) → [vase, teapot, dinner plates].
+- table → (surrounded) → [chair1, chair2, chair3, chair4].
+
+Step 3: Reflect and Validate
+
+- Check: Are all objects included? Yes.
+- Check: Are relationships correctly classified? Yes.
+- Check: Is the format correct? Yes.
+- No corrections needed.
+
+Step 4: Output the Scene Graph
+
+- Objects: [table, vase, teapot, dinner plates, chairs]. - Actions :  - Spatial Relations: [top]
+Semantic Nodes: [surrounded]
+- Scene Graph:
+- table → (top) → [vase, teapot, dinner plates].
+- table → (surrounded) → [chair1, chair2, chair3, chair4].
+
+---
+
+Example 2:
+
+Input: "02:43- 03:15: The lecturer taps the top of the shoulder of the CPR dummy with the left and right hand."
+
+Step 1: Analyze the Input
+
+- Objects: [The Lecturer, shoulder, CPR dummy, left hand, right hand].
+- Actions Time : 02:43- 03:15.
+- Actions : The Lecturer → (action) → tap → (top) → shoulder → (of) → CPR dummy.
+- Prepositional labels: The Lecturer → (action) → tap → (with) → [left hand, right hand].
+- Anchor Node: The Lecturer.
+
+Step 2: Construct the Graph
+
+- Object Nodes: The Lecturer, shoulder, CPR dummy, left hand, right hand.
+- Actions Time : 02:43- 03:15.
+- Actions: tap
+- Spatial Relations: top 
+- Prepositional labels: with, of
+- Edges:
+- The Lecturer → (action) → tap → (top) → shoulder (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (of) → CPR dummy (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (with) → left hand (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (with) → right hand (time_range: 02:43- 03:15).
+
+Step 3: Reflect and Validate
+
+- Check: Are all objects included? Yes.
+- Check: Are relationships correctly classified? Yes.
+- Check: Is the format correct? Yes.
+- No corrections needed.
+
+Step 4: Output the Scene Graph
+
+- Objects: [The Lecturer, shoulder, CPR dummy, left hand, right hand].
+- Actions Time : [02:43- 03:15].
+- Spatial Relations: [top].
+- Prepositional labels: [with, of].
+- Scene Graph:
+- The Lecturer → (action) → tap → (top) → shoulder (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (of) → CPR dummy (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (with) → left hand (time_range: 02:43- 03:15).
+- The Lecturer → (action) → tap → (with) → right hand (time_range: 02:43- 03:15).
+
+---
+
+Example 3:
+
+Input: "02:22- 03:01: The lecturer kneels on the left knee in front of the CPR dummy"
+
+Step 1: Analyze the Input
+
+- Objects: [The Lecturer, left knee, dummy].
+- Actions Time : 02:22- 03:01.
+- Relations:
+- Action-based: The Lecturer → (action) → kneel → (on) → left knee.
+- Spatial Relations: The Lecturer → (action) → kneel → (front) → dummy.
+- Anchor Node: The Lecturer.
+
+Step 2: Construct the Graph
+
+- Object Nodes: The Lecturer, left knee, dummy.
+- Actions Time : 02:22- 03:01.
+- Action Nodes: kneel
+- Spatial Relations: front
+- Prepositional Labels: on 
+- Edges:
+- The Lecturer → (action) → kneel → (on) → left knee (time_range: 02:22- 03:01).
+- The Lecturer → (action) → kneel → (front) → dummy (time_range: 02:22- 03:01).
+
+Step 3: Reflect and Validate
+
+- Check: Are all objects included? Yes.
+- Check: Are relationships correctly classified? Yes.
+- Check: Is the format correct? Yes.
+- No corrections needed.
+
+Step 4: Output the Scene Graph
+
+- Objects: [The Lecturer, left knee, dummy].
+- Actions Time : [02:22- 03:01].
+- Semantic Relation: [front]
+- Prepositional Labels: [on]
+- Actions: [kneel]
+- Scene Graph:
+- The Lecturer → (action) → kneel → (on) → left knee (time_range: 02:22- 03:01).
+- The Lecturer → (action) → kneel → (front) → dummy (time_range: 02:22- 03:01).
