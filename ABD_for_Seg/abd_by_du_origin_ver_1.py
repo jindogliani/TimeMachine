@@ -177,69 +177,69 @@ def visualize_segments(similarities, segments):
     plt.tight_layout()
     plt.show()
 
-#############################
-# Refinement (Merge Over-segmentation)
-#############################
-def segment_feature_average(features, boundaries):
-    """
-    후보 boundary를 이용해 각 segment의 평균 feature를 계산.
-    
-    Args:
-        features: (N x D) numpy array, smoothed features
-        boundaries: 경계 인덱스 리스트 (예: [0, b1, b2, ..., N])
-    
-    Returns:
-        segments: (num_segments x D) numpy array, 각 segment의 평균 feature
-    """
-    segments = []
-    for i in range(len(boundaries) - 1):
-        start = boundaries[i]
-        end = boundaries[i+1]
-        if end > start:
-            seg_feat = np.mean(features[start:end], axis=0)
-        else:
-            seg_feat = features[start]
-        segments.append(seg_feat)
-    return np.array(segments)
 
-def refine_segments_adjacent(features, boundaries, K):
-    """
-    인접한 segment끼리만 병합하여 over-segmentation을 줄이고 최종적으로 K개의 segment로 만든다.
-    (비인접 segment 병합 시 시간 순서가 꼬이는 문제를 방지)
-    
-    Args:
-        features: (N x D) numpy array, smoothed features
-        boundaries: 경계 인덱스 리스트 (예: [0, b1, b2, ..., N])
-        K: 최종 목표 segment 수
-        
-    Returns:
-        seg_boundaries: 각 segment의 (start, end) index 튜플 리스트, 총 K개
-        segments: 최종 segment들의 feature 리스트 (K x D)
-    """
-    # 각 segment의 평균 feature 계산
-    segment_feats = segment_feature_average(features, boundaries)
-    segments = list(segment_feats)
-    seg_boundaries = list(zip(boundaries[:-1], boundaries[1:]))
-    
-    # 오직 인접한 segment끼리만 병합
-    while len(segments) > K:
-        max_sim = -np.inf
-        merge_index = -1
-        for i in range(len(segments)-1):
-            sim = cosine_sim(segments[i], segments[i+1])
-            if sim > max_sim:
-                max_sim = sim
-                merge_index = i
-        # 인접한 두 segment 병합
-        merged_feat = (segments[merge_index] + segments[merge_index+1]) / 2
-        merged_boundary = (seg_boundaries[merge_index][0], seg_boundaries[merge_index+1][1])
-        segments[merge_index] = merged_feat
-        seg_boundaries[merge_index] = merged_boundary
-        segments.pop(merge_index+1)
-        seg_boundaries.pop(merge_index+1)
-    
+def cosine_sim(a, b):
+    return 1 - cosine(a, b)
 
-    return seg_boundaries, segments
+def refine_segments_with_temporal_bias(features, segment_boundaries, target_K, lambda_penalty=0.005):
+    """
+    시간적 거리 고려하여 세그먼트 병합
+    Args:
+        features: (N x D) numpy array, frame-wise features
+        segment_boundaries: list of (start, end) tuples
+        target_K: 최종 원하는 세그먼트 수
+        lambda_penalty: 시간 거리 패널티 가중치
+    Returns:
+        segment_boundaries: (start, end) 튜플 리스트
+    """
+    # Step 1: segment-wise 평균 feature 계산
+    segment_features = []
+    for start, end in segment_boundaries:
+        segment_feat = np.mean(features[start:end], axis=0)
+        segment_features.append(segment_feat)
+
+    while len(segment_features) > target_K:
+        M = len(segment_features)
+        best_score = -np.inf
+        best_pair = (0, 1)
+
+        for i in range(M):
+            for j in range(i + 1, M):
+                # cosine similarity
+                cos_sim = cosine_sim(segment_features[i], segment_features[j])
+                # 시간 중심 거리
+                ci = (segment_boundaries[i][0] + segment_boundaries[i][1]) / 2
+                cj = (segment_boundaries[j][0] + segment_boundaries[j][1]) / 2
+                temporal_dist = abs(ci - cj)
+                score = cos_sim - lambda_penalty * temporal_dist
+
+                if score > best_score:
+                    best_score = score
+                    best_pair = (i, j)
+
+        # 병합 수행
+        i, j = best_pair
+        start_i, end_i = segment_boundaries[i]
+        start_j, end_j = segment_boundaries[j]
+        new_start = min(start_i, start_j)
+        new_end = max(end_i, end_j)
+        new_feat = (segment_features[i] * (end_i - start_i) + segment_features[j] * (end_j - start_j)) / (new_end - new_start)
+
+        # 리스트 갱신
+        new_segment_boundaries = []
+        new_segment_features = []
+        for idx in range(len(segment_features)):
+            if idx in [i, j]:
+                continue
+            new_segment_boundaries.append(segment_boundaries[idx])
+            new_segment_features.append(segment_features[idx])
+        new_segment_boundaries.append((new_start, new_end))
+        new_segment_features.append(new_feat)
+
+        segment_boundaries = new_segment_boundaries
+        segment_features = new_segment_features
+
+    return segment_boundaries
 
 #############################
 # Main Pipeline
@@ -288,23 +288,23 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
     if K > 0 and len(segments_init) > K:
         # refine_segments_adjacent를 위해 boundaries 리스트 재구성
         init_boundaries = [b for b, _ in segments_init] + [len(features)]
-        refined_boundaries, _ = refine_segments_adjacent(smoothed_features, init_boundaries, K)
+        refined_boundaries = refine_segments_with_temporal_bias(smoothed_features, segments_init, K, lambda_penalty=0.005)
         segments_final = refined_boundaries
         print(f"[✔] Refinement 수행 후 최종 segment 수: {len(segments_final)}")
     else:
         segments_final = segments_init
         print(f"[✔] Refinement 미수행 (초기 segment 수: {len(segments_final)})")
     
+    # 7. Segment 정보 출력 (실제 frame index로 환산: frame_skip 반영)
 
-    # 7. Segment 정보 출력 (frame_skip 반영, 시간 순 정렬 포함)
     segments_final = sorted(segments_final, key=lambda x: x[0])  # 🔥 정렬 추가
-
     print("\n[Segment Info]")
     for i, (start, end) in enumerate(segments_final):
         real_start = start * frame_skip_used
         real_end = end * frame_skip_used
         duration = (real_end - real_start) / fps
-        print(f"Segment {i+1}: Frame {real_start} \u2192 {real_end} ({duration:.2f} sec)")
+        print(f"Segment {i+1}: Frame {real_start} → {real_end} ({duration:.2f} sec)")
+        
     # 8. 시각화
     visualize_segments(similarities, segments_final)
 
