@@ -31,7 +31,7 @@ pip install -r requirements.txt
    - 결과: 각 세그먼트에 대한 텍스트 설명 생성
 
 2. **`Text-to-SG/text_to_graph_postprocess.py`**: 씬그래프 후처리
-   - 설명: 출력된 그래프(텍스트형)를 `JSON`형 그래프 구조로 변환
+   - 설명: 출력된 그래프(텍스트형)를 `JSON`형 씬그래프 구조로 변환 후처리
    - 실행:
    ```bash
    python Text-to-SG/text_to_graph_postprocess.py
