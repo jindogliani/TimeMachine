@@ -284,6 +284,7 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
         segments: (start, end) 튜플 리스트, 각 segment의 시작/끝 frame index
     """
     # 1. Feature 추출
+    print(f"video_path: {video_path}")
     features, frame_skip_used = extract_frame_features(video_path, frame_skip=frame_skip)
     print(f"[✔] {len(features)} frames의 feature 추출 완료 (frame_skip={frame_skip_used})")
     
@@ -319,6 +320,7 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
         real_end = end * frame_skip_used
         duration = (real_end - real_start) / fps
         print(f"Segment {i+1}: Frame {real_start} → {real_end} ({duration:.2f} sec)")
+        print(f"         시작: {real_start/fps:.2f}초, 끝: {real_end/fps:.2f}초")
         
     # 8. 시각화
     visualize_segments_with_boundaries(similarities, refined_boundaries, boundaries)
@@ -333,7 +335,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Fast and Unsupervised Action Boundary Detection (ABD)"
     )
-    parser.add_argument('--video_path', type=str, default="ABD_for_CPR/CPR_data/CPR_frontview.mp4",
+    parser.add_argument('--video_path', type=str, default="../CPR_data/CPR_frontview.mp4",
                         help="입력 영상 파일 경로")
     parser.add_argument('--sigma', type=float, default=2.0,
                         help="Gaussian smoothing에 사용할 sigma 값")

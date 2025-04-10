@@ -1,3 +1,12 @@
 langchain
 langchain-openai
 langchain-community
+scikit-learn
+scipy
+numpy
+matplotlib
+opencv-python
+argparse
+json
+datetime
+re
