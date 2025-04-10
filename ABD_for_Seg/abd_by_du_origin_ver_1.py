@@ -109,7 +109,7 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
 
 if __name__ == "__main__":
     video_path = "/Users/heejeong/vscode/TimeMachine/CPR_data/CPR_frontview.mp4"
-    run_abd_safe(video_path,sigma=2,window_size=10, avg_action_length=30)
+    run_abd_safe(video_path,sigma=2,window_size=10)
     """ run_abd(
     video_path=video_path,
     fast_mode=True,           # 🔥 빠른 실행용
