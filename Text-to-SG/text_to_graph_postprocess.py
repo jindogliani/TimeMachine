@@ -142,7 +142,7 @@ print(edge_dict)
 # }
 
 today = datetime.now().strftime("%m%d")
-dir = f"{today}_SG"
+dir = f"../SceneGraphs/{today}_SG"
 os.makedirs(dir, exist_ok=True)
 
 objects_file_path = os.path.join(dir, "1_objects_node.json")

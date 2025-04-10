@@ -20,17 +20,20 @@ pip install -r requirements.txt
    - 결과: 영상 내 액션 세그먼트 생성 (`ABD_for_CPR/du_segments.json`)
 
 ### 텍스트-그래프 생성 (Text-to-Graph)
-1. **`Text-to-SG/0_text_to_gpt.py`**: ChatGPT를 사용한 텍스트 처리
+1. **`Text-to-SG/text_to_gpt.py`**: ChatGPT를 사용한 텍스트 처리
    ```bash
-   python Text-to-SG/0_text_to_gpt.py
+   python Text-to-SG/text_to_gpt.py
    ```
    - 결과: 각 세그먼트에 대한 텍스트 설명 생성
 
-2. **`Text-to-SG/1_text_to_graph_postprocess.py`**: 씬 그래프 후처리
+2. **`Text-to-SG/text_to_graph_postprocess.py`**: 씬 그래프 후처리
    ```bash
-   python Text-to-SG/1_text_to_graph_postprocess.py
+   python Text-to-SG/text_to_graph_postprocess.py
    ```
-   - 결과: 최종 씬 그래프 생성
+   - 결과: 최종 씬그래프 생성 (`TimeMachine/SceneGraphs/{Today}_SG/` 디렉토리에 저장)
+     - `1_objects_node.json`: 객체 노드 정보
+     - `2_relations_node.json`: 관계 노드 정보
+     - `3_edge.json`: 엣지 정보
 
 ## 파일 정보
 - **영상 파일**:
