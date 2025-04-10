@@ -295,14 +295,16 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
         segments_final = segments_init
         print(f"[✔] Refinement 미수행 (초기 segment 수: {len(segments_final)})")
     
-    # 7. Segment 정보 출력 (실제 frame index로 환산: frame_skip 반영)
+
+    # 7. Segment 정보 출력 (frame_skip 반영, 시간 순 정렬 포함)
+    segments_final = sorted(segments_final, key=lambda x: x[0])  # 🔥 정렬 추가
+
     print("\n[Segment Info]")
     for i, (start, end) in enumerate(segments_final):
         real_start = start * frame_skip_used
         real_end = end * frame_skip_used
         duration = (real_end - real_start) / fps
-        print(f"Segment {i+1}: Frame {real_start} → {real_end} ({duration:.2f} sec)")
-    
+        print(f"Segment {i+1}: Frame {real_start} \u2192 {real_end} ({duration:.2f} sec)")
     # 8. 시각화
     visualize_segments(similarities, segments_final)
 
