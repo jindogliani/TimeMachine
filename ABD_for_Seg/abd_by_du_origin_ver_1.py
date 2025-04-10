@@ -9,7 +9,7 @@ import argparse
 from sklearn.metrics.pairwise import cosine_similarity
 import json
 
-def export_du_segments_to_json(segments, output_path="du_segments.json"):
+def export_du_segments_to_json(segments, output_path="ABD_for_CPR/du_segments.json"):
     export_list = [[start, end] for start, end in segments]
     with open(output_path, "w") as f:
         json.dump(export_list, f, indent=2)
@@ -157,41 +157,57 @@ def segment_from_boundaries(boundaries, total_length):
         segments.append( (boundaries[i], boundaries[i+1]) )
     return segments
 
-def visualize_segments(similarities, segments):
-    """
-    similarity curve와 segmentation 결과를 시각화.
-    
-    Args:
-        similarities: cosine similarity 시퀀스 (1D array)
-        segments: (start, end) 튜플 리스트
-    """
+def visualize_segments_with_boundaries(similarities, segments, boundaries):
     plt.figure(figsize=(14, 5))
     plt.plot(similarities, label="Cosine Similarity", color="blue")
+    
+    ## boundary 점 표시
+    #for b in boundaries:
+    #    plt.axvline(x=b, color='red', linestyle='--', alpha=0.7)
+
     cmap = cm.get_cmap("Set3", len(segments))
     for i, (start, end) in enumerate(segments):
         plt.axvspan(start, end, alpha=0.3, color=cmap(i), label=f"Seg {i+1}")
+        
+    #plt.title("Action Boundary Detection Visualization (with candidate boundaries)")
     plt.title("Action Boundary Detection Visualization")
     plt.xlabel("Frame Index")
     plt.ylabel("Cosine Similarity")
     plt.legend(loc="lower right")
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.show()
+
+
 
 
 def cosine_sim(a, b):
     return 1 - cosine(a, b)
 
-def refine_segments_with_temporal_bias(features, segment_boundaries, target_K, lambda_penalty=0.005):
+def estimate_k_by_duration(total_frames, fps=60, target_duration_sec=8):
     """
-    시간적 거리 고려하여 세그먼트 병합
+    전체 프레임 수와 타겟 세그먼트 시간(초)을 기준으로 자동 K 추정
+    """
+    video_duration = total_frames / fps
+    est_k = int(round(video_duration / target_duration_sec))
+    return max(est_k, 1)
+
+def refine_segments_with_temporal_bias(features, segment_boundaries, target_K=None, lambda_penalty=0.005, fps=60, target_duration_sec=8):
+    """
+    시간적 거리 고려하여 세그머트 밀포
     Args:
         features: (N x D) numpy array, frame-wise features
         segment_boundaries: list of (start, end) tuples
-        target_K: 최종 원하는 세그먼트 수
-        lambda_penalty: 시간 거리 패널티 가중치
+        target_K: 최종 원하는 세그머트 수. None이면 자동 계산
+        lambda_penalty: 시간 거리 패널티 가용치
+        fps: frame per second
+        target_duration_sec: 원하는 각 세그머트 기간
     Returns:
-        segment_boundaries: (start, end) 튜플 리스트
+        segment_boundaries: (start, end) 툴퍼 리스트
     """
+    if target_K is None:
+        total_frames = segment_boundaries[-1][1]  # 마지막 end frame
+        target_K = estimate_k_by_duration(total_frames, fps=fps, target_duration_sec=target_duration_sec)
+
     # Step 1: segment-wise 평균 feature 계산
     segment_features = []
     for start, end in segment_boundaries:
@@ -287,7 +303,6 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
     # 6. (옵션) over-segmentation refinement: 인접 segment 병합 방식 적용
     if K > 0 and len(segments_init) > K:
         # refine_segments_adjacent를 위해 boundaries 리스트 재구성
-        init_boundaries = [b for b, _ in segments_init] + [len(features)]
         refined_boundaries = refine_segments_with_temporal_bias(smoothed_features, segments_init, K, lambda_penalty=0.005)
         segments_final = refined_boundaries
         print(f"[✔] Refinement 수행 후 최종 segment 수: {len(segments_final)}")
@@ -306,8 +321,7 @@ def run_abd_safe(video_path, sigma=2, window_size=10, min_boundaries=30, frame_s
         print(f"Segment {i+1}: Frame {real_start} → {real_end} ({duration:.2f} sec)")
         
     # 8. 시각화
-    visualize_segments(similarities, segments_final)
-
+    visualize_segments_with_boundaries(similarities, refined_boundaries, boundaries)
     export_du_segments_to_json(segments_final)
     
     return segments_final
@@ -329,7 +343,7 @@ def main():
                         help="최소 경계 개수 (부족할 경우 보완)")
     parser.add_argument('--frame_skip', type=int, default=2,
                         help="feature 추출 시 건너뛸 frame 간격")
-    parser.add_argument('--K', type=int, default=15,
+    parser.add_argument('--K', type=int, default=19,
                         help="최종 목표 segment 수 (0이면 refinement 수행하지 않음)")
     parser.add_argument('--fps', type=float, default=60,
                         help="영상의 초당 프레임 수 (duration 계산용)")
