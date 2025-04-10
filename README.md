@@ -9,6 +9,8 @@ pip install -r requirements.txt
 ```
 
 ## 사용 가능한 스크립트
+
+### ABD Action Segmentation
 - ABD_for_Seg/abd_by_du_origin_ver_1.py: 액션 경계 감지(ABD) 알고리즘
 
 - Text-to-SG/text_to_gpt.py: Chat GPT를 사용한 텍스트 처리
